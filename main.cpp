@@ -12,21 +12,25 @@
 
 using namespace std;
 
-class Card {
-    enum Color {REDS, BLUES, GREENS, YELLOWS, WILDS };
-    enum Type {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGTHT, NINE, REVERSE, DRAW_TWO, WILD, WILD_DRAW_FOUR};
-};
+enum Color {REDS, BLUES, GREENS, YELLOWS, WILDS};
+enum Type {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE,
+           REVERSE, SKIP, DRAW_TWO, WILD, WILD_DRAW_FOUR};
 
-struct Cards {
+struct CardScore;
+class LPOptimizer;
+
+struct Card {
     Color color;
     Type type;
     bool matches(const Card& other) const {
-        return color == other.color || value == other.value|| color == WILDS || other.color == WILD;
+        return color == other.color || type == other.type ||
+               color == WILDS || other.color == WILDS;
     }
 };
 
 class Deck {
     std::vector<Card> cards;
+public:
     void shuffle();
     Card draw();
 };
@@ -38,7 +42,7 @@ private:
 public:
     Player(bool ai = false) : isAI(ai) {}
 
-    bool canPlay(Card topCard) {
+    bool canPlay(const Card& topCard) {
         for (const auto& card : hand) {
             if (card.matches(topCard)) {
                 return true;
@@ -46,9 +50,8 @@ public:
         }
         return false;
     }
-    Card playCard(int index);
 
-    int chooseOptimalCard(const Card& topCard, int oppententHandSize) {
+    int chooseOptimalCard(const Card& topCard, int opponentHandSize) {
         if (!isAI) {
             return -1;
         }
@@ -63,13 +66,14 @@ public:
             return -1;
         }
 
-        //score each playable card using the linerar programing
+        //score each playable card using the linear programming
         int bestIndex = -1;
         double bestScore = -1.0;
 
         for (int idx : playableIndices) {
-            CardScore score = LPOptimizer::calcCard(hand[idx], topCard, hand.size(), oppententHandSize);
-            //apply the optimixaiton
+            CardScore score = LPOptimizer::calcCard(hand[idx], topCard,
+                                                    hand.size(), opponentHandSize);
+            //apply the optimization
             if (score.strategicValue > bestScore) {
                 bestScore = score.strategicValue;
                 bestIndex = idx;
@@ -78,7 +82,8 @@ public:
         return bestIndex;
     }
 
-    int choooseOptimalCardMultiTurn(const Card& topCard, int oppententHandSize, int turnsToAnalyze = 3) {
+    int chooseOptimalCardMultiTurn(const Card& topCard, int opponentHandSize,
+                                    int turnsToAnalyze = 3) {
        if (!isAI) {
            return -1;
        }
@@ -96,11 +101,13 @@ public:
         for (int idx : playableIndices) {
             double multiTurnValues = 0.0;
 
-            for (int turn; turn < turnsToAnalyze; turn++) {
-                CardScore score = LPOtimizer::calcCard(hand[idx], topCard, hand.size()-turn, oppententHandSize);
+            for (int turn = 0; turn < turnsToAnalyze; turn++) {
+                CardScore score = LPOptimizer::calcCard(hand[idx], topCard,
+                                                        hand.size() - turn,
+                                                        opponentHandSize);
 
-                double discountFacotr = pow(0.9, turn);
-                multiTurnValues += score.strategicValue * discountFacotr;
+                double discountFactor = pow(0.9, turn);
+                multiTurnValues += score.strategicValue * discountFactor;
             }
             if (multiTurnValues > bestScore) {
                 bestScore = multiTurnValues;
@@ -127,40 +134,40 @@ public:
     const std::vector<Card>& getHand() const {
         return hand;
     }
-
 };
 
-//working on linier procraming with card score system for the lininer programinf potimization
+//working on linear programming with card score system for the linear programming optimization
 struct CardScore {
-    double attackingValue; //a score for more offensize cards good for winning
-    double defendingValue; //a scroe for more defesnive dards good for protection
-    double strategicValue; //a socre for normal/overall unsfule cards
+    double attackingValue; //a score for more offensive cards good for winning
+    double defendingValue; //a score for more defensive cards good for protection
+    double strategicValue; //a score for normal/overall useful cards
 };
 
 class LPOptimizer {
 public:
-    //helps to get the vale of each card
-    static CardScore calcCard(const Card& card, const Card& topCard, int handSize, int opponentHandSize) {
+    //helps to get the value of each card
+    static CardScore calcCard(const Card& card, const Card& topCard,
+                              int handSize, int opponentHandSize) {
         CardScore score;
 
-
-        //gtes the attacking value/getting rid of cards
+        //gets the attacking value/getting rid of cards
         score.attackingValue = calcAttackingValue(card, handSize);
 
-        //gets the defesnive vale of the cards that are good to keep
+        //gets the defensive value of the cards that are good to keep
         score.defendingValue = calcDefendingValue(card, opponentHandSize);
 
-        //it gets the combined straticic value of the card
-        score.strategicValue = 0.6 * score.attackingValue + 0.4 * score.defendingValue;
+        //it gets the combined strategic value of the card
+        score.strategicValue = 0.6 * score.attackingValue +
+                              0.4 * score.defendingValue;
 
         return score;
     }
 
 private:
     static double calcAttackingValue(const Card& card, int handSize) {
-        double value = 0;
+        double value = 0.0;
 
-        //the base values for differnt card types
+        //the base values for different card types
         switch (card.type) {
             case WILD:
                 value = 0.5;
@@ -177,27 +184,27 @@ private:
             case SKIP:
                 value = 0.35;
                 break;
-                default:
+            default:
                 value = 0.2 + (card.type * 0.01);
                 break;
         }
         //adjust based on hand size
-        if (handSize <= 3)
-            {
+        if (handSize <= 3) {
             value *= 1.5;
         }
         else if (handSize > 7) {
-            if (card.type == DRAW_TWO || card.type ++ WILD_DRAW_FOUR) {
+            if (card.type == DRAW_TWO || card.type == WILD_DRAW_FOUR) {
                 value *= 1.3;
             }
         }
         return value;
     }
+
     static double calcDefendingValue(const Card& card, int opponentHandSize) {
-        double value = 0;
+        double value = 0.0;
 
         //gets/decides if it should save the card
-        if (card.type == WILD || card.type ++ WILD_DRAW_FOUR) {
+        if (card.type == WILD || card.type == WILD_DRAW_FOUR) {
             value = 0.8;
         }
         else if (card.type == DRAW_TWO) {
@@ -207,9 +214,9 @@ private:
             value = 0.2;
         }
 
-        //test if the enemy is close to wining
+        //test if the enemy is close to winning
         if (opponentHandSize <= 2) {
-            if (card.type == DRAW_TWO || card.type ++ WILD_DRAW_FOUR) {
+            if (card.type == DRAW_TWO || card.type == WILD_DRAW_FOUR) {
                 value *= 1.5;
             }
         }
@@ -217,12 +224,11 @@ private:
     }
 };
 
-
-
 class Game {
     Deck deck;
     std::vector<Player> players;
     std::stack<Card> discardPile;
+public:
     void playTurn();
     bool checkWinner();
 };
