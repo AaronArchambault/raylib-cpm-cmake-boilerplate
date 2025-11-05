@@ -1,4 +1,4 @@
-/*#include <raylib.h>
+#include <raylib.h>
 #include <cstdint>
 #include <iostream>
 #include <sstream>
@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <cmath>
+
 using namespace std;
 
 class Card {
@@ -30,10 +32,192 @@ class Deck {
 };
 
 class Player {
+private:
     std::vector<Card> hand;
-    bool canPlay(Card topCard);
+    bool isAI;
+public:
+    Player(bool ai = false) : isAI(ai) {}
+
+    bool canPlay(Card topCard) {
+        for (const auto& card : hand) {
+            if (card.matches(topCard)) {
+                return true;
+            }
+        }
+        return false;
+    }
     Card playCard(int index);
+
+    int chooseOptimalCard(const Card& topCard, int oppententHandSize) {
+        if (!isAI) {
+            return -1;
+        }
+        //find all the playable cards
+        vector<int> playableIndices;
+        for (int i = 0; i < hand.size(); i++) {
+            if (hand[i].matches(topCard)) {
+                playableIndices.push_back(i);
+            }
+        }
+        if (playableIndices.empty()) {
+            return -1;
+        }
+
+        //score each playable card using the linerar programing
+        int bestIndex = -1;
+        double bestScore = -1.0;
+
+        for (int idx : playableIndices) {
+            CardScore score = LPOptimizer::calcCard(hand[idx], topCard, hand.size(), oppententHandSize);
+            //apply the optimixaiton
+            if (score.strategicValue > bestScore) {
+                bestScore = score.strategicValue;
+                bestIndex = idx;
+            }
+        }
+        return bestIndex;
+    }
+
+    int choooseOptimalCardMultiTurn(const Card& topCard, int oppententHandSize, int turnsToAnalyze = 3) {
+       if (!isAI) {
+           return -1;
+       }
+        vector<int> playableIndices;
+        for (int i = 0; i < hand.size(); i++) {
+            if (hand[i].matches(topCard)) {
+                playableIndices.push_back(i);
+            }
+        }
+        if (playableIndices.empty()) {
+            return -1;
+        }
+        int bestIndex = -1;
+        double bestScore = -1.0;
+        for (int idx : playableIndices) {
+            double multiTurnValues = 0.0;
+
+            for (int turn; turn < turnsToAnalyze; turn++) {
+                CardScore score = LPOtimizer::calcCard(hand[idx], topCard, hand.size()-turn, oppententHandSize);
+
+                double discountFacotr = pow(0.9, turn);
+                multiTurnValues += score.strategicValue * discountFacotr;
+            }
+            if (multiTurnValues > bestScore) {
+                bestScore = multiTurnValues;
+                bestIndex = idx;
+            }
+        }
+        return bestIndex;
+    }
+
+    Card playCard(int index) {
+        Card played = hand[index];
+        hand.erase(hand.begin() + index);
+        return played;
+    }
+
+    void addCard(Card card) {
+        hand.push_back(card);
+    }
+
+    int getHandSize() const {
+        return hand.size();
+    }
+
+    const std::vector<Card>& getHand() const {
+        return hand;
+    }
+
 };
+
+//working on linier procraming with card score system for the lininer programinf potimization
+struct CardScore {
+    double attackingValue; //a score for more offensize cards good for winning
+    double defendingValue; //a scroe for more defesnive dards good for protection
+    double strategicValue; //a socre for normal/overall unsfule cards
+};
+
+class LPOptimizer {
+public:
+    //helps to get the vale of each card
+    static CardScore calcCard(const Card& card, const Card& topCard, int handSize, int opponentHandSize) {
+        CardScore score;
+
+
+        //gtes the attacking value/getting rid of cards
+        score.attackingValue = calcAttackingValue(card, handSize);
+
+        //gets the defesnive vale of the cards that are good to keep
+        score.defendingValue = calcDefendingValue(card, opponentHandSize);
+
+        //it gets the combined straticic value of the card
+        score.strategicValue = 0.6 * score.attackingValue + 0.4 * score.defendingValue;
+
+        return score;
+    }
+
+private:
+    static double calcAttackingValue(const Card& card, int handSize) {
+        double value = 0;
+
+        //the base values for differnt card types
+        switch (card.type) {
+            case WILD:
+                value = 0.5;
+                break;
+            case WILD_DRAW_FOUR:
+                value = 0.7;
+                break;
+            case DRAW_TWO:
+                value = 0.4;
+                break;
+            case REVERSE:
+                value = 0.35;
+                break;
+            case SKIP:
+                value = 0.35;
+                break;
+                default:
+                value = 0.2 + (card.type * 0.01);
+                break;
+        }
+        //adjust based on hand size
+        if (handSize <= 3)
+            {
+            value *= 1.5;
+        }
+        else if (handSize > 7) {
+            if (card.type == DRAW_TWO || card.type ++ WILD_DRAW_FOUR) {
+                value *= 1.3;
+            }
+        }
+        return value;
+    }
+    static double calcDefendingValue(const Card& card, int opponentHandSize) {
+        double value = 0;
+
+        //gets/decides if it should save the card
+        if (card.type == WILD || card.type ++ WILD_DRAW_FOUR) {
+            value = 0.8;
+        }
+        else if (card.type == DRAW_TWO) {
+            value = 0.6;
+        }
+        else {
+            value = 0.2;
+        }
+
+        //test if the enemy is close to wining
+        if (opponentHandSize <= 2) {
+            if (card.type == DRAW_TWO || card.type ++ WILD_DRAW_FOUR) {
+                value *= 1.5;
+            }
+        }
+        return value;
+    }
+};
+
+
 
 class Game {
     Deck deck;
@@ -90,7 +274,7 @@ int main()
 
     CloseWindow();
     return 0;
-}*/
+}
 
 
 //AI code only use to reference the raylib
