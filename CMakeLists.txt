@@ -9,5 +9,5 @@ CPMAddPackage("gh:raysan5/raylib#5.0")
 CPMAddPackage("gh:raysan5/raygui#4.0")
 #CPMAddPackage("gh:raysan5/rpng#1.0")
 
-add_executable(HelloRaylib main.cpp)
+add_executable(HelloRaylib main.cpp "deck.h")
 target_link_libraries(HelloRaylib PUBLIC raylib)

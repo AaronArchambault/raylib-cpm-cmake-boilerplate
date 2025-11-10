@@ -6,22 +6,19 @@
 //#include <assert.h>
 #include <stack>
 #include <string>
-#include <vector>
-#include <random>
-#include <cmath>
+
+
+
+#include "deck.h"
 
 using namespace std;
-
-enum Color {REDS, BLUES, GREENS, YELLOWS, WILDS};
-enum Type {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE,
-           REVERSE, SKIP, DRAW_TWO, WILD, WILD_DRAW_FOUR};
 
 struct CardScore;
 class LPOptimizer;
 
 struct Card {
-    Color color;
-    Type type;
+    cardColor color;
+    cardValue type;
     bool matches(const Card& other) const {
         return color == other.color || type == other.type ||
                color == WILDS || other.color == WILDS;
@@ -227,7 +224,7 @@ private:
 class Game {
     Deck deck;
     std::vector<Player> players;
-    std::stack<Card> discardPile;
+    Card discardPile;
 public:
     void playTurn();
     bool checkWinner();
@@ -260,7 +257,7 @@ int main()
         {
             for(int col = 0; col < imgWidth; col++)
             {
-                pixels[row * imgWidth + col] = (Color) {
+                pixels[row * imgWidth + col] = Color {
                     (uint8_t)(GetRandomValue(0, 255)),
                     (uint8_t)(GetRandomValue(0, 255)),
                     (uint8_t)(GetRandomValue(0, 255)),
