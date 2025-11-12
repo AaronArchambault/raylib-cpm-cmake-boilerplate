@@ -43,6 +43,7 @@ private:
     std::vector<Card> cards;
     std::mt19937 rng;
 public:
+    Deck();
     void shuffle();
     Card draw();
     bool isEmpty() const;
@@ -58,7 +59,7 @@ private:
     std::string name;
 
 public:
-    Player(bool ai = false, const std::string& playerName = "Player") //: isAI(ai) {}
+    Player(bool ai = false, const std::string& playerName = "Player");//: isAI(ai) {}
 
     bool canPlay(const Card& topCard) const;
     int chooseOptimalCard(const Card& topCard, int opponentHandSize);
