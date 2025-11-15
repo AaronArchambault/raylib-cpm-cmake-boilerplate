@@ -98,7 +98,7 @@ enum GameState {
 class Game {
     Deck deck;
     std::vector<Player> players;
-    Card discardPile;
+    Deck discardPile;
     Card topCard;
     int currentPlayer;
     bool clockwise;

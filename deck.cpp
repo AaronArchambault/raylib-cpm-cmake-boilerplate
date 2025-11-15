@@ -245,13 +245,13 @@ void Deck::shuffle() {
 
 Card Deck::draw() {
     Card drawn;
-    std::uniform_int_distribution dist(0, 14);
+    std::uniform_int_distribution<int> dist(0, 14);
     drawn.type = cardValue(dist(rng));
     if (drawn.isWild())
         drawn.color = WILDS;
     else
     {
-        uniform_int_distribution colDist(0, 3);
+        uniform_int_distribution<int> colDist(0, 3);
         drawn.color = cardColor(colDist(rng));
     }
     return drawn;
@@ -296,7 +296,7 @@ void Game::initialize(int numPlayers, int numAI) {
         }
     }
 
-    //draw the intatl top card
+    //draw the initial top card
     do {
         topCard = deck.draw();
     } while (topCard.isWild() || topCard.isActionCard());
@@ -348,7 +348,7 @@ void Game::playTurn(int cardIndex) {
     //handles the wild cards
     if (played.isWild()) {
         if (player.getISAI()) {
-            topCard.colorChange(player.chooseBestColor());
+            topCard.colorChange(player.chooseBestColor(topCard));
         }
         else {
             state = WAITING_FOR_COLOR_CHOICE;
@@ -356,7 +356,7 @@ void Game::playTurn(int cardIndex) {
         }
     }
 
-    //handeling the action cards
+    //handling the action cards
     switch (played.type) {
     case SKIP:
         nextPlayer();
@@ -396,9 +396,9 @@ void Game::nextPlayer() {
         int nextPlayerIndex = clockwise ?
             (currentPlayer + 1) % players.size() : (currentPlayer - 1 + players.size()) % players.size();
         int opponentHandSize = players[nextPlayerIndex].getHandSize();
-        int cardToPlay = players[currentPlayer].chooseOptimalCardMultiTurn(topCard, opponentHandSize);
+        int cardToPlay = players[currentPlayer].chooseOptimalCardMultiTurn(topCard, opponentHandSize, 3);
 
-        if (cardToPlay != -1) {
+        if (cardToPlay == -1) {
             playTurn(-1);
         }
         else {
@@ -449,37 +449,4 @@ void Game::chooseColorForWild(cardColor color) {
 
     }
     nextPlayer();
-}
-
-Color getCardColor(cardColor color) {
-    switch (color) {
-    case REDS: return RED;
-    case BLUES: return BLUE;
-    case GREENS: return GREEN;
-    case YELLOWS: return YELLOW;
-    case WILDS: return BLACK;
-    default: return WHITE;
-    }
-}
-
-string getCardValueString(cardValue type) {
-    switch (type) {
-    case ZERO: return "0";
-    case ONE: return "1";
-    case TWO: return "2";
-    case THREE: return "3";
-    case FOUR: return "4";
-    case FIVE: return "5";
-    case SIX: return "6";
-    case SEVEN: return "7";
-    case EIGHT: return "8";
-    case NINE: return "9";
-    case SKIP: return "SKIP";
-    case DRAW_TWO: return "+2";
-    case REVERSE: return "REVERSE";
-    case WILD_DRAW_FOUR: return "+4";
-    case WILD: return "Wild";
-    default: return "?";
-
-    }
 }
