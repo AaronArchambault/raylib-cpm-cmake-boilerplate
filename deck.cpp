@@ -341,6 +341,10 @@ void Game::initialize(int numPlayers, int numAI) {
             player.addCard(deck.draw());
         }
     }
+    //sort each player's hand
+    for (auto& player : players) {
+        player.sortHand();
+    }
 
     //draw the initial top card
     do {
