@@ -150,7 +150,7 @@ void Player::sortHand()
         // clear out the hand
         hand.clear();
 
-        for (queue<Card> bucket : sortQueues) // put the sorted cards back into the hand
+        for (queue<Card> &bucket : sortQueues) // put the sorted cards back into the hand
         {
             while (!bucket.empty())
             {
