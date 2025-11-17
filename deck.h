@@ -71,6 +71,8 @@ public:
     bool getISAI() const {return isAI;}
     std::string getName() const {return name;}
     cardColor chooseBestColor(const Card& topCard) const;
+
+    void sortHand(); // sorts this player's hand primarily by color, then by number
 };
 
 struct CardScore {

@@ -7,8 +7,11 @@
 #include <cmath>
 #include <cstdint>
 #include <random>
+#include <queue>
 
 using namespace std;
+
+// ------ PLAYER ------------ PLAYER ------------ PLAYER ------------ PLAYER ------------ PLAYER ------------ PLAYER ------
 
 Player::Player(bool ai, const std::string& playerName) : isAI(ai), name(playerName) {}
 
@@ -125,6 +128,45 @@ cardColor Player::chooseBestColor(const Card& topCard) const {
 
 }
 
+// performs a radix sort on this player's hand
+// sorts primarily by color, then by number
+void Player::sortHand()
+{
+    std::cout << "Debug: Sorting the hand" << std::endl;
+
+    vector<queue<Card>> sortQueues;
+    sortQueues.resize(15, queue<Card>()); // create the queues
+
+    for (int sortByCol = 0; sortByCol < 2; sortByCol++)
+    {
+        for (Card current : hand) // put all cards into their appropriate queues
+        {
+            if (sortByCol)
+                sortQueues[current.color].push(current);
+            else
+                sortQueues[current.type].push(current);
+        }
+
+        // clear out the hand
+        hand.clear();
+
+        for (queue<Card> bucket : sortQueues) // put the sorted cards back into the hand
+        {
+            while (!bucket.empty())
+            {
+                hand.push_back(bucket.front());
+                bucket.pop();
+            }
+        }
+    }
+    
+
+    //with help from https://visualgo.net/en/sorting
+    // and https://en.wikipedia.org/wiki/Radix_sort
+}
+
+// ---- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG ----
+
 //helps to get the value of each card
 CardScore LPOptimizer::calcCard(const Card& card, const Card& topCard, int handSize, int opponentHandSize) {
     CardScore score;
@@ -202,6 +244,8 @@ double LPOptimizer::calcDefendingValue(const Card& card, int opponentHandSize) {
     return value;
 }
 
+// ------- DECK -------------- DECK -------------- DECK -------------- DECK -------------- DECK -------------- DECK -------
+
 Deck::Deck()
 {
     rng = std::mt19937(std::random_device{}());
@@ -269,6 +313,8 @@ void Deck::addCard(const Card& card) {
     cards.push_back(card);
 }
 
+// ------- GAME -------------- GAME -------------- GAME -------------- GAME -------------- GAME -------------- GAME -------
+
 Game::Game() : currentPlayer(0), clockwise(true), drawStack(0), state(GAME_MENU), winner(-1) {}
 
 void Game::initialize(int numPlayers, int numAI) {
@@ -309,6 +355,7 @@ void Game::playTurn(int cardIndex) {
     if (cardIndex == -1) {
         if (drawStack > 0) {
             drawCards(currentPlayer, drawStack);
+            player.sortHand(); // sort the player hand after they draw a card
             drawStack = 0;
             nextPlayer();
         }
