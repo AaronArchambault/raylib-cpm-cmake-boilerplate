@@ -1,4 +1,5 @@
 #include "deck.h"
+#include <glpk.h>
 #include <map>
 #include <raylib.h>
 #include <string>
@@ -22,6 +23,138 @@ bool Player::canPlay(const Card& topCard) const {
         }
     }
     return false;
+}
+
+double LPOptimizer::getCardUtility(const Card& card, int handSize, int opponentHandSize) {
+    double utility = 0.0;
+
+    // Base utility by card type
+    switch (card.type) {
+        case WILD_DRAW_FOUR:
+            utility = 10.0;
+            break;
+        case WILD:
+            utility = 8.0;
+            break;
+        case DRAW_TWO:
+            utility = 7.0;
+            break;
+        case SKIP:
+            utility = 6.0;
+            break;
+        case REVERSE:
+            utility = 6.0;
+            break;
+        default: // Number cards
+            utility = 2.0 + card.type;  // 0-9 gets values 2-11
+            break;
+    }
+
+    // Adjust utility based on game state
+    if (handSize <= 2) {
+        // Close to winning - prefer any card to get rid of
+        utility += 5.0;
+    }
+
+    if (opponentHandSize <= 2) {
+        // Opponent close to winning - prefer action cards
+        if (card.type == DRAW_TWO || card.type == WILD_DRAW_FOUR ||
+            card.type == SKIP) {
+            utility += 8.0;
+            }
+    }
+
+    // Wilds are more valuable when you have fewer matching cards
+    if (card.isWild() && handSize > 5) {
+        utility += 3.0;
+    }
+
+    return utility;
+}
+
+
+
+int LPOptimizer::solveLPForBestCard(const std::vector<Card>& hand,
+                                     const Card& topCard,
+                                     int handSize,
+                                     int opponentHandSize) {
+    // Find all playable cards
+    std::vector<int> playableIndices;
+    for (int i = 0; i < hand.size(); i++) {
+        if (hand[i].matches(topCard)) {
+            playableIndices.push_back(i);
+        }
+    }
+
+    if (playableIndices.empty()) {
+        return -1;  // No playable cards
+    }
+
+    if (playableIndices.size() == 1) {
+        return playableIndices[0];  // Only one option
+    }
+
+    // Set up the Linear Programming problem
+    glp_prob *lp;
+    lp = glp_create_prob();
+    glp_set_prob_name(lp, "UNO_Card_Selection");
+    glp_set_obj_dir(lp, GLP_MAX);  // Maximize utility
+
+    int numPlayable = playableIndices.size();
+
+    // Add one binary variable for each playable card
+    // x[i] = 1 if we play card i, 0 otherwise
+    glp_add_cols(lp, numPlayable);
+
+    for (int i = 0; i < numPlayable; i++) {
+        char var_name[50];
+        snprintf(var_name, sizeof(var_name), "play_card_%d", i);  // FIXED: Use snprintf instead
+        glp_set_col_name(lp, i + 1, var_name);
+        glp_set_col_kind(lp, i + 1, GLP_BV);  // Binary variable (0 or 1)
+
+        // Set objective coefficient (the utility of playing this card)
+        int cardIdx = playableIndices[i];
+        double utility = getCardUtility(hand[cardIdx], handSize, opponentHandSize);
+        glp_set_obj_coef(lp, i + 1, utility);
+    }
+
+    // Add constraint: We can only play exactly ONE card
+    glp_add_rows(lp, 1);
+    glp_set_row_name(lp, 1, "play_one_card");
+    glp_set_row_bnds(lp, 1, GLP_FX, 1.0, 1.0);  // Sum must equal 1
+
+    // Set up constraint coefficients
+    int *indices = new int[numPlayable + 1];  // 1-indexed for GLPK
+    double *values = new double[numPlayable + 1];
+
+    for (int i = 0; i < numPlayable; i++) {
+        indices[i + 1] = i + 1;
+        values[i + 1] = 1.0;  // Each variable contributes 1 to the sum
+    }
+
+    glp_set_mat_row(lp, 1, numPlayable, indices, values);
+
+    // Solve the LP problem - FIXED: Removed glp_smpl_cp
+    glp_term_out(GLP_OFF);  // Turn off solver messages
+    glp_simplex(lp, NULL);
+    glp_intopt(lp, NULL);  // Solve as integer program (for binary variables)
+
+    // Get the solution
+    int bestCardIndex = -1;
+    for (int i = 0; i < numPlayable; i++) {
+        double value = glp_mip_col_val(lp, i + 1);
+        if (value > 0.5) {  // This card was selected (should be exactly 1)
+            bestCardIndex = playableIndices[i];
+            break;
+        }
+    }
+
+    // Clean up
+    delete[] indices;
+    delete[] values;
+    glp_delete_prob(lp);
+
+    return bestCardIndex;
 }
 
 int Player::chooseOptimalCard(const Card& topCard, int opponentHandSize) {
@@ -55,11 +188,16 @@ int Player::chooseOptimalCard(const Card& topCard, int opponentHandSize) {
     return bestIndex;
 }
 
-int Player::chooseOptimalCardMultiTurn(const Card& topCard, int opponentHandSize, int turnsToAnalyze) {
+int Player::chooseOptimalCardMultiTurn(const Card& topCard, int opponentHandSize,
+                                       int turnsToAnalyze) const {
     if (!isAI) {
         return -1;
     }
-    vector<int> playableIndices;
+
+    // Use the actual Linear Programming solver
+    return LPOptimizer::solveLPForBestCard(hand, topCard, hand.size(), opponentHandSize);
+}
+   /* vector<int> playableIndices;
     for (int i = 0; i < hand.size(); i++) {
         if (hand[i].matches(topCard)) {
             playableIndices.push_back(i);
@@ -87,7 +225,7 @@ int Player::chooseOptimalCardMultiTurn(const Card& topCard, int opponentHandSize
         }
     }
     return bestIndex;
-}
+}*/
 
 
 Card Player::playCard(int index) {
@@ -168,48 +306,46 @@ void Player::sortHand()
 // ---- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG -------- LINEAR PROG ----
 
 //helps to get the value of each card
-CardScore LPOptimizer::calcCard(const Card& card, const Card& topCard, int handSize, int opponentHandSize) {
+// Keep the old calcCard for compatibility, but mark it as legacy
+CardScore LPOptimizer::calcCard(const Card& card, const Card& topCard,
+                                int handSize, int opponentHandSize) {
     CardScore score;
 
-    //gets the attacking value/getting rid of cards
+    // Legacy scoring (for reference)
     score.attackingValue = calcAttackingValue(card, handSize);
-
-    //gets the defensive value of the cards that are good to keep
     score.defendingValue = calcDefendingValue(card, opponentHandSize);
+    score.strategicValue = 0.6 * score.attackingValue + 0.4 * score.defendingValue;
 
-    //it gets the combined strategic value of the card
-    score.strategicValue = 0.6 * score.attackingValue +
-        0.4 * score.defendingValue;
+    // LP-based value
+    score.lpOptimalValue = getCardUtility(card, handSize, opponentHandSize);
 
     return score;
 }
 
-//private:
 double LPOptimizer::calcAttackingValue(const Card& card, int handSize) {
     double value = 0.0;
 
-    //the base values for different card types
     switch (card.type) {
-    case WILD:
-        value = 0.5;
-        break;
-    case WILD_DRAW_FOUR:
-        value = 0.7;
-        break;
-    case DRAW_TWO:
-        value = 0.4;
-        break;
-    case REVERSE:
-        value = 0.35;
-        break;
-    case SKIP:
-        value = 0.35;
-        break;
-    default:
-        value = 0.2 + (card.type * 0.01);
-        break;
+        case WILD:
+            value = 0.5;
+            break;
+        case WILD_DRAW_FOUR:
+            value = 0.7;
+            break;
+        case DRAW_TWO:
+            value = 0.4;
+            break;
+        case REVERSE:
+            value = 0.35;
+            break;
+        case SKIP:
+            value = 0.35;
+            break;
+        default:
+            value = 0.2 + (card.type * 0.01);
+            break;
     }
-    //adjust based on hand size
+
     if (handSize <= 3) {
         value *= 1.5;
     }
@@ -224,7 +360,6 @@ double LPOptimizer::calcAttackingValue(const Card& card, int handSize) {
 double LPOptimizer::calcDefendingValue(const Card& card, int opponentHandSize) {
     double value = 0.0;
 
-    //gets/decides if it should save the card
     if (card.type == WILD || card.type == WILD_DRAW_FOUR) {
         value = 0.8;
     }
@@ -235,7 +370,6 @@ double LPOptimizer::calcDefendingValue(const Card& card, int opponentHandSize) {
         value = 0.2;
     }
 
-    //test if the enemy is close to winning
     if (opponentHandSize <= 2) {
         if (card.type == DRAW_TWO || card.type == WILD_DRAW_FOUR) {
             value *= 1.5;
@@ -443,7 +577,7 @@ void Game::nextPlayer() {
     }
 
     //AI turn
-    if (state == GAME_PLAYING && players[currentPlayer].getISAI()) {
+    /*if (state == GAME_PLAYING && players[currentPlayer].getISAI()) {
         int nextPlayerIndex = clockwise ?
             (currentPlayer + 1) % players.size() : (currentPlayer - 1 + players.size()) % players.size();
         int opponentHandSize = players[nextPlayerIndex].getHandSize();
@@ -455,7 +589,7 @@ void Game::nextPlayer() {
         else {
             playTurn(cardToPlay);
         }
-    }
+    }*/
 }
 
 void Game::reverseDirection() {

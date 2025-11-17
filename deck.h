@@ -5,6 +5,7 @@
 #include <random>
 #include <cmath>
 #include <algorithm>
+#include <glpk.h>
 
 enum cardColor { REDS, BLUES, GREENS, YELLOWS, WILDS };
 enum cardValue {
@@ -63,7 +64,7 @@ public:
 
     bool canPlay(const Card& topCard) const;
     int chooseOptimalCard(const Card& topCard, int opponentHandSize);
-    int chooseOptimalCardMultiTurn(const Card& topCard, int opponentHandSize, int turnsToAnalyze = 3);
+    int chooseOptimalCardMultiTurn(const Card& topCard, int opponentHandSize, int turnsToAnalyze = 3) const;
     Card playCard(int index);
     void addCard(const Card& card);
     int getHandSize() const;
@@ -79,15 +80,23 @@ struct CardScore {
     double attackingValue;
     double defendingValue;
     double strategicValue;
+    double lpOptimalValue;
 };
 
 class LPOptimizer {
 public:
     static CardScore calcCard(const Card& card, const Card& topCard,
                               int handSize, int opponentHandSize);
+
+    static int solveLPForBestCard(const std::vector<Card>& hand,
+                                 const Card& topCard,
+                                 int handSize,
+                                 int opponentHandSize);
+
 private:
     static double calcAttackingValue(const Card& card, int handSize);
     static double calcDefendingValue(const Card& card, int opponentHandSize);
+    static double getCardUtility(const Card& card, int handSize, int opponentHandSize);
 };
 
 enum GameState {

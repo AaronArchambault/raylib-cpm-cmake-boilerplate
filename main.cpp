@@ -32,6 +32,10 @@ const int CARD_WIDTH = 60;
 const int CARD_HEIGHT = 100;
 const int CARD_SPACING = 5;
 
+
+float aiTurnDelay = 0.0f;
+const float AI_TURN_WAIT = 0.5f;
+
 // Game states for main menu
 enum MenuState {
     MENU_MAIN,
@@ -90,6 +94,28 @@ int main() {
             else if (state == GAME_PLAYING) {
                 showColorPicker = false;
                 const Player& currentPlayer = game.getCurrentPlayer();
+
+                if (currentPlayer.getISAI()) {
+                    aiTurnDelay += GetFrameTime();
+
+                    if (aiTurnDelay >= AI_TURN_WAIT) {
+                        const vector<Player>& players = game.getPlayers();
+                        int nextPlayerIndex = game.isClockwise() ?
+                            (game.getCurrentPlayerIndex() + 1) % players.size() :
+                            (game.getCurrentPlayerIndex() - 1 + players.size()) % players.size();
+                        int opponentHandSize = players[nextPlayerIndex].getHandSize();
+
+                        int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
+
+                        if (cardToPlay == -1) {
+                            game.playTurn(-1);
+                        }
+                        else {
+                            game.playTurn(cardToPlay);
+                        }
+                        aiTurnDelay = 0.0f;
+                    }
+                }
 
                 if (!currentPlayer.getISAI()) {
                     const vector<Card>& hand = currentPlayer.getHand();
@@ -177,8 +203,8 @@ int main() {
                     const Player& player = players[p];
                     int handSize = player.getHandSize();
 
-                    if (p == game.getCurrentPlayerIndex() && !player.getISAI()) {
-                        //it draws the human player's hand at the bottom so the player can see their cards
+                    if (!player.getISAI()) {
+                        // Always draw human player's hand face-up at the bottom
                         const vector<Card>& hand = player.getHand();
                         int totalHandWidth = hand.size() * (CARD_WIDTH + CARD_SPACING);
                         int startX = (SCREEN_WIDTH - totalHandWidth) / 2;
