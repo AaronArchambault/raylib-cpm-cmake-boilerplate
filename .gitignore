@@ -11,6 +11,11 @@ cmake-build-minsizerel/**
 build/**
 out/**
 
+glpk-4.65/w64/*.dll
+glpk-4.65/w32/*.dll
+glpk-4.65/w64/*.lib
+glpk-4.65/w32/*.lib
+
 # OSX
 .DS_Store
 

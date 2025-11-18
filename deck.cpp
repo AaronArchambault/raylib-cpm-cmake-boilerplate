@@ -52,12 +52,12 @@ double LPOptimizer::getCardUtility(const Card& card, int handSize, int opponentH
 
     // Adjust utility based on game state
     if (handSize <= 2) {
-        // Close to winning - prefer any card to get rid of
+        // Close to winning prefer any card to get rid of
         utility += 5.0;
     }
 
     if (opponentHandSize <= 2) {
-        // Opponent close to winning - prefer action cards
+        // Opponent close to winning prefer action cards
         if (card.type == DRAW_TWO || card.type == WILD_DRAW_FOUR ||
             card.type == SKIP) {
             utility += 8.0;
@@ -108,7 +108,7 @@ int LPOptimizer::solveLPForBestCard(const std::vector<Card>& hand,
 
     for (int i = 0; i < numPlayable; i++) {
         char var_name[50];
-        snprintf(var_name, sizeof(var_name), "play_card_%d", i);  // FIXED: Use snprintf instead
+        snprintf(var_name, sizeof(var_name), "play_card_%d", i);
         glp_set_col_name(lp, i + 1, var_name);
         glp_set_col_kind(lp, i + 1, GLP_BV);  // Binary variable (0 or 1)
 
@@ -134,10 +134,9 @@ int LPOptimizer::solveLPForBestCard(const std::vector<Card>& hand,
 
     glp_set_mat_row(lp, 1, numPlayable, indices, values);
 
-    // Solve the LP problem - FIXED: Removed glp_smpl_cp
     glp_term_out(GLP_OFF);  // Turn off solver messages
     glp_simplex(lp, NULL);
-    glp_intopt(lp, NULL);  // Solve as integer program (for binary variables)
+    glp_intopt(lp, NULL);  // Solve as integer program
 
     // Get the solution
     int bestCardIndex = -1;
@@ -149,7 +148,7 @@ int LPOptimizer::solveLPForBestCard(const std::vector<Card>& hand,
         }
     }
 
-    // Clean up
+    // the clean up
     delete[] indices;
     delete[] values;
     glp_delete_prob(lp);
