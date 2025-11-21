@@ -492,14 +492,12 @@ void Game::playTurn(int cardIndex) {
     if (cardIndex == -1) {
         if (drawStack > 0) {
             drawCards(currentPlayer, drawStack);
-            player.sortHand(); // sort the player hand after they draw a card
+            player.sortHand();
             drawStack = 0;
             nextPlayer();
         }
         else {
             player.addCard(deck.draw());
-
-            //check if the card can play
             const Card& drawnCard = player.getHand().back();
             if (!drawnCard.matches(topCard)) {
                 nextPlayer();
@@ -507,6 +505,7 @@ void Game::playTurn(int cardIndex) {
         }
         return;
     }
+
     //playing the cards
     if (cardIndex < 0 || cardIndex >= player.getHandSize()) {
         return;
@@ -517,27 +516,22 @@ void Game::playTurn(int cardIndex) {
         return;
     }
 
+    // Check draw stack before allowing the card to be played
     if (drawStack > 0) {
         if (cardToPlay.type != DRAW_TWO && cardToPlay.type != WILD_DRAW_FOUR) {
-            drawCards(currentPlayer, drawStack);
-            drawStack = 0;
-            nextPlayer();
-            return;
+            return;  // Don't allow this card to be played
         }
     }
+
     Card played = player.playCard(cardIndex);
     discardPile.addCard(topCard);
     topCard = played;
 
-    //handles the wild cards
-    if (played.isWild()) {
-        if (player.getISAI()) {
-            topCard.colorChange(player.chooseBestColor(topCard));
-        }
-        else {
-            state = WAITING_FOR_COLOR_CHOICE;
-            return;
-        }
+    // Check for winner
+    if (player.getHandSize() == 0) {
+        winner = currentPlayer;
+        state = GAME_OVER;
+        return;
     }
 
     //handling the action cards
@@ -558,13 +552,22 @@ void Game::playTurn(int cardIndex) {
         break;
     }
 
-    //check for the winner
-    if (player.getHandSize() == 0) {
-        winner = currentPlayer;
-        state = GAME_OVER;
-        return;
+   
+    if (played.isWild()) {
+        if (player.getISAI()) {
+            topCard.colorChange(player.chooseBestColor(topCard));
+            nextPlayer();  // AI auto-chooses and moves to next player
+        }
+        else {
+            state = WAITING_FOR_COLOR_CHOICE;
+      
+            return;
+        }
     }
-    nextPlayer();
+    else {
+        // For non-wild cards, move to next player
+        nextPlayer();
+    }
 }
 
 void Game::nextPlayer() {

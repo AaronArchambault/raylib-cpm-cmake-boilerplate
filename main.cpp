@@ -105,14 +105,40 @@ int main() {
                             (game.getCurrentPlayerIndex() - 1 + players.size()) % players.size();
                         int opponentHandSize = players[nextPlayerIndex].getHandSize();
 
-                        int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
+                        // Check if there's a draw stack that needs to be handled
+                        if (game.getDrawStack() > 0) {
+                            // Try to find a Draw 2 or Wild Draw 4 to stack
+                            int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
 
-                        if (cardToPlay == -1) {
-                            game.playTurn(-1);
+                            const Card& topCard = game.getTopCard();
+                            bool canStack = false;
+
+                            if (cardToPlay != -1) {
+                                const Card& selectedCard = currentPlayer.getHand()[cardToPlay];
+                                if (selectedCard.type == DRAW_TWO || selectedCard.type == WILD_DRAW_FOUR) {
+                                    canStack = true;
+                                }
+                            }
+
+                            if (canStack) {
+                                game.playTurn(cardToPlay);//is stacks another draw card
+                            }
+                            else {
+                                game.playTurn(-1);//it draws the cards and skip turn
+                            }
                         }
                         else {
-                            game.playTurn(cardToPlay);
+                            //it is the normal turn
+                            int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
+
+                            if (cardToPlay == -1) {
+                                game.playTurn(-1); //it draw a card
+                            }
+                            else {
+                                game.playTurn(cardToPlay);//it is the play the chosen card
+                            }
                         }
+
                         aiTurnDelay = 0.0f;
                     }
                 }
