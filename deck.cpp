@@ -269,7 +269,7 @@ cardColor Player::chooseBestColor(const Card& topCard) const {
 // sorts primarily by color, then by number
 void Player::sortHand()
 {
-    std::cout << "Debug: Sorting the hand" << std::endl;
+    //std::cout << "Debug: Sorting the hand" << std::endl;
 
     vector<queue<Card>> sortQueues;
     sortQueues.resize(15, queue<Card>()); // create the queues
@@ -498,6 +498,7 @@ void Game::playTurn(int cardIndex) {
         }
         else {
             player.addCard(deck.draw());
+            player.sortHand();
             const Card& drawnCard = player.getHand().back();
             if (!drawnCard.matches(topCard)) {
                 nextPlayer();
