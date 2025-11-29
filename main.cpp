@@ -16,18 +16,18 @@
 //https://www.youtube.com/watch?v=Vk96jvoS9so
 using namespace std;
 
-// Forward declarations of helper functions
+//they are the forward declarations of functions
 Color getCardColor(cardColor color);
 string getCardValueString(cardValue type);
 void DrawCard(const Card& card, int x, int y, int width, int height, bool faceUp = true);
 void DrawButton(const char* text, int x, int y, int width, int height, Color color);
 bool IsButtonClicked(int x, int y, int width, int height);
 
-//th screens dimensions
+//they are the screens dimensions
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 
-//th cards dimensions
+//they are the cards dimensions
 const int CARD_WIDTH = 60;
 const int CARD_HEIGHT = 100;
 const int CARD_SPACING = 5;
@@ -36,18 +36,18 @@ const int CARD_SPACING = 5;
 float aiTurnDelay = 0.0f;
 const float AI_TURN_WAIT = 0.5f;
 
-// Game states for main menu
+//it is that game states for main menu
 enum MenuState {
     MENU_MAIN,
     MENU_GAME
 };
 
 int main() {
-    //th initializeing the window
+    //the initializeing of the window
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "THE UNO Game");
     SetTargetFPS(60);
 
-    //the game's variables for the game paly to make it workws
+    //the game's variables for the game play to make it work
     Game game;
     MenuState menuState = MENU_MAIN;
     int numPlayers = 1;
@@ -56,12 +56,12 @@ int main() {
     cardColor selectedColor = REDS;
     bool showColorPicker = false;
 
-    //the main game loop
+    //it is the main game loop
     while (!WindowShouldClose()) {
-        Vector2 mousePos = GetMousePosition(); //gets the mouse postion for clicking the buttons and selescting the cards
+        Vector2 mousePos = GetMousePosition(); //gets the mouse position for clicking the buttons and selecting the cards
 
         if (menuState == MENU_MAIN) {
-            //the main menu logic
+            //the main menus logic
             if (IsButtonClicked(SCREEN_WIDTH/2 - 100, 250, 200, 50)) {
                 numPlayers = 2;
                 numAI = 1;
@@ -70,11 +70,11 @@ int main() {
             }
         }
         else if (menuState == MENU_GAME) {
-            //the games logic
+            //the game's logic
             GameState state = game.getState();
 
             if (state == WAITING_FOR_COLOR_CHOICE) {
-                //it shows color picker for pinkign thsd color of the cards with the wilds
+                //it shows a color picker for picking this color of the cards with the wilds
                 showColorPicker = true;
 
                 //it checks for color selection
@@ -105,9 +105,9 @@ int main() {
                             (game.getCurrentPlayerIndex() - 1 + players.size()) % players.size();
                         int opponentHandSize = players[nextPlayerIndex].getHandSize();
 
-                        // Check if there's a draw stack that needs to be handled
+                        //it checks if there's a draw stack that needs to be handled or worked on
                         if (game.getDrawStack() > 0) {
-                            // Try to find a Draw 2 or Wild Draw 4 to stack
+                            //it tries to find a Draw 2 or Wild Draw 4 to stack
                             int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
 
                             const Card& topCard = game.getTopCard();
@@ -121,18 +121,18 @@ int main() {
                             }
 
                             if (canStack) {
-                                game.playTurn(cardToPlay);//is stacks another draw card
+                                game.playTurn(cardToPlay);//it is the stacks for another draw card
                             }
                             else {
                                 game.playTurn(-1);//it draws the cards and skip turn
                             }
                         }
                         else {
-                            //it is the normal turn
+                            //it is the normal turn when nothing special happens
                             int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
 
                             if (cardToPlay == -1) {
-                                game.playTurn(-1); //it draw a card
+                                game.playTurn(-1); //it is for the draw a card
                             }
                             else {
                                 game.playTurn(cardToPlay);//it is the play the chosen card
@@ -167,7 +167,7 @@ int main() {
 
                     //it is the draw card button
                     if (IsButtonClicked(SCREEN_WIDTH/2 + 150, SCREEN_HEIGHT/2 - 60, 120, 50)) {
-                        game.playTurn(-1);  //it draws the cards
+                        game.playTurn(-1); //it draws the cards
                     }
                 }
             }
@@ -190,7 +190,7 @@ int main() {
         if (menuState == MENU_MAIN) {
             //it draws the main menu
             DrawText("THE UNO GAME", SCREEN_WIDTH/2 - MeasureText("THE UNO GAME", 120)/2, 100, 75, YELLOW);
-            //draws the 2 player button that the player can press
+            //it draws the 2-player button that the player can press or the start button
             DrawButton("2 Players (1 AI)", SCREEN_WIDTH/2 - 100, 250, 200, 50, GREEN);
 
             DrawText("Click to start a game!", SCREEN_WIDTH/2 - MeasureText("Click to start a game!", 20)/2, 500, 20, WHITE);
@@ -230,7 +230,7 @@ int main() {
                     int handSize = player.getHandSize();
 
                     if (!player.getISAI()) {
-                        // Always draw human player's hand face-up at the bottom
+                        //it always draws the human player's hand face-up at the bottom so that the player can see it
                         const vector<Card>& hand = player.getHand();
                         int totalHandWidth = hand.size() * (CARD_WIDTH + CARD_SPACING);
                         int startX = (SCREEN_WIDTH - totalHandWidth) / 2;
@@ -267,7 +267,7 @@ int main() {
                     }
                 }
 
-                //it draws the action buttons for human player to be able to draw the cards from the deck
+                //it draws the action buttons for the human player to be able to draw the cards from the deck
                 if (!currentPlayer.getISAI()) {
                     DrawButton("Draw Card", SCREEN_WIDTH/2 + 150, SCREEN_HEIGHT/2 - 60, 120, 50, DARKBLUE);
                 }
