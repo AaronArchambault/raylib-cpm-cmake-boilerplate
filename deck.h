@@ -8,30 +8,12 @@
 
 //it is the card colors in UNO
 enum cardColor {
-    REDS,
-    BLUES,
-    GREENS,
-    YELLOWS,
-    WILDS
+    REDS, BLUES, GREENS, YELLOWS, WILDS
 };
 
 //it is the card values/types in UNO
 enum cardValue {
-    ZERO,
-    ONE,
-    TWO,
-    THREE,
-    FOUR,
-    FIVE,
-    SIX,
-    SEVEN,
-    EIGHT,
-    NINE,
-    SKIP,
-    REVERSE,
-    DRAW_TWO,
-    WILD,
-    WILD_DRAW_FOUR
+    ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, SKIP, REVERSE, DRAW_TWO, WILD, WILD_DRAW_FOUR
 };
 
 //it is the game states

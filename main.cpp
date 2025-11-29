@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include "deck.h"
+
 //https://www.raylib.com
 //https://www.raylib.com/cheatsheet/cheatsheet.html
 //https://www.raylib.com/examples.html
@@ -186,7 +187,7 @@ int main() {
 
         //it is the draw call/drawing
         BeginDrawing();
-        ClearBackground(DARKGREEN);
+        ClearBackground(DARKGREEN); //it sets the background to be the color dark green
 
         if (menuState == MENU_MAIN) {
             //it draws the main menu
@@ -358,7 +359,7 @@ bool IsButtonClicked(int x, int y, int width, int height) {
     Vector2 mousePos = GetMousePosition();
     return (mousePos.x >= x && mousePos.x <= x + width &&
             mousePos.y >= y && mousePos.y <= y + height &&
-            IsMouseButtonPressed(MOUSE_LEFT_BUTTON));
+            IsMouseButtonPressed(MOUSE_LEFT_BUTTON)); //it checks if the left mouse button is pressed 
 }
 
 //it converts a card color enum to a Raylib Color for rendering
