@@ -32,7 +32,7 @@ const int CARD_WIDTH = 60;
 const int CARD_HEIGHT = 100;
 const int CARD_SPACING = 5;
 
-
+//it is the AI turn delay variables for timing
 float aiTurnDelay = 0.0f;
 const float AI_TURN_WAIT = 0.5f;
 
@@ -107,8 +107,8 @@ int main() {
 
                         //it checks if there's a draw stack that needs to be handled or worked on
                         if (game.getDrawStack() > 0) {
-                            //it tries to find a Draw 2 or Wild Draw 4 to stack
-                            int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
+                            //it tries to find a Draw 2 or Wild Draw 4 to stack using advanced AI
+                            int cardToPlay = currentPlayer.chooseOptimalCardAdvanced(game.getTopCard(), opponentHandSize, 3);
 
                             const Card& topCard = game.getTopCard();
                             bool canStack = false;
@@ -129,7 +129,8 @@ int main() {
                         }
                         else {
                             //it is the normal turn when nothing special happens
-                            int cardToPlay = currentPlayer.chooseOptimalCardMultiTurn(game.getTopCard(), opponentHandSize, 3);
+                            //it uses the advanced AI with multi-turn planning and opponent modeling
+                            int cardToPlay = currentPlayer.chooseOptimalCardAdvanced(game.getTopCard(), opponentHandSize, 3);
 
                             if (cardToPlay == -1) {
                                 game.playTurn(-1); //it is for the draw a card
@@ -313,6 +314,7 @@ int main() {
     return 0;
 }
 
+//it draws a UNO card on the screen
 void DrawCard(const Card& card, int x, int y, int width, int height, bool faceUp) {
     if (!faceUp) {
         //it draws the cards back
@@ -337,6 +339,7 @@ void DrawCard(const Card& card, int x, int y, int width, int height, bool faceUp
     }
 }
 
+//it draws an interactive button with hover effect
 void DrawButton(const char* text, int x, int y, int width, int height, Color color) {
     Vector2 mousePos = GetMousePosition();
     bool isHovered = (mousePos.x >= x && mousePos.x <= x + width &&
@@ -350,6 +353,7 @@ void DrawButton(const char* text, int x, int y, int width, int height, Color col
     DrawText(text, x + width/2 - textWidth/2, y + height/2 - 10, 20, WHITE);
 }
 
+//it checks if a button area was clicked by the mouse
 bool IsButtonClicked(int x, int y, int width, int height) {
     Vector2 mousePos = GetMousePosition();
     return (mousePos.x >= x && mousePos.x <= x + width &&
@@ -357,6 +361,7 @@ bool IsButtonClicked(int x, int y, int width, int height) {
             IsMouseButtonPressed(MOUSE_LEFT_BUTTON));
 }
 
+//it converts a card color enum to a Raylib Color for rendering
 Color getCardColor(cardColor color) {
     switch (color) {
     case REDS: return RED;
@@ -368,6 +373,7 @@ Color getCardColor(cardColor color) {
     }
 }
 
+//it converts a card value enum to a display string
 string getCardValueString(cardValue type) {
     switch (type) {
     case ZERO: return "0";
